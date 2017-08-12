@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <link href="__PUBLIC__/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="__PUBLIC__/iconfont/iconfont.css">
+        <link href="__PUBLIC__/css/admin.css" rel="stylesheet">
+        <title>帅呗后台-店铺</title>
+    </head>
+    <header class="main-header">
+        <span>广告设置</span>
+    </header>
+    <body class="main-body" style="background:#FFFFFF;">
+        <div class="main-content">
+          <div id="list_wrap">
+            <foreach name="ad_list" item="item">
+              <div class="ad_list" style="margin:20px;border:1px solid rgba(1,1,1,.1);">
+                <img src="{$item['img_url']}" style="height:80px;width:140px;">&nbsp;&nbsp;&nbsp;&nbsp;
+                <span style="font-size:20px;">url:{$item['link_url']}</span>&nbsp;&nbsp;&nbsp;&nbsp;
+                <button class="del_ad" data="{$item['id']}" style="color:red;font-size:18px;height:40px;width:100px;border-radius:20px;background:none;border:0.5px solid grey;">删除</button>
+              </div>
+            </foreach>
+          </div>
+
+          <div id="add_new" style="display:none;margin:20px;border:1px solid rgba(1,1,1,.1);height:80px;">
+            <div class="div" style="display:inline-block;margin:0px 30px;height:80px;width:80px;background:rgba(1,1,1,.1);border-radius:40px;text-align:center;line-height:80px;">
+              <img src="__PUBLIC__/icon/plus.png" style="display:inline;height:40px;width:40px;" class="new_select_img">
+            </div>
+            <select style="display:inline-block;margin-left:50px;">
+              <foreach name="goods_list" item="item">
+                <option value="{$item['goods_id']}">{$item['goodsname']}</option>
+              </foreach>
+            </select>
+            <button class="add_new_delete" style="margin-left:40px;color:red;font-size:18px;height:40px;width:100px;border-radius:20px;background:none;border:0.5px solid grey;">删除</button>
+          </div>
+          <input id="input_file" type="file" style="display:none;">
+          <img id="add_line" src="__PUBLIC__/icon/plus.png" style="height:40px;width:40px;display:block;margin:50px;">
+          <button id="submit" style="margin:0px 20px 50px 20px;color:blue;font-size:18px;height:40px;width:100px;border-radius:10px;background:none;border:0.5px solid grey;">提交数据</button>
+        </div>
+    </body>
+    <script src="__PUBLIC__/js/jquery-3.1.0.min.js"></script>
+    <script src="__PUBLIC__/bootstrap/js/bootstrap.min.js"></script>
+    <script src="__PUBLIC__/layer/layer.js"></script>
+    <script>
+      $(document).ready(function(){
+        var img_index;
+        var new_ad_index=0;
+        var disable=true;
+        if(typeof FileReader == 'undefined'){
+          alert('你的浏览器不支持FileReader');
+          disable=false;
+        }
+
+        $('#add_line').on('click',function(){
+          $('#add_new').clone().appendTo('#list_wrap').removeAttr('id').css('display','block').addClass('new_add_list').attr('data',new_ad_index);
+          new_ad_index++;
+        });
+        $('#list_wrap').on('click','.new_select_img',function(){
+          $('#input_file').trigger('click');
+          img_index=$(this).parent().parent().attr('data');
+        });
+        $('#list_wrap').on('click','button.add_new_delete',function(){
+          $(this).parent().remove();
+        });
+        $('#input_file').on('change',function(){
+          var file=document.getElementById("input_file").files[0];
+          //console.log(file);
+          $('#input_file').val('');
+          //console.log(file.type);
+          var p=/^image\/(jpg|png|jpeg)$/;
+          if(p.exec(file.type)){
+            if(file.size>2*1024*1024){
+              alert('图片太大，请选择低于2m的图片');
+            }else{
+              var reader = new FileReader();
+              reader.readAsDataURL(file);
+              reader.onload=function(e){
+                var base_64=this.result;
+                $('.new_add_list').map(function(){
+                  if($(this).attr('data')==img_index){
+                    $(this).children('div').remove();
+                    $(this).prepend('<img src="'+base_64+'" style="height:80px;width:140px;">');
+                  }
+                });
+              }
+            }
+          }else {
+            alert('请选择图片，格式（jpg，png，jpeg）');
+          }
+        });
+        $('#submit').on('click',function(){
+          var index=0;
+          var list=[];
+          $('.new_add_list').map(function(){
+            if(!$(this).children().first().hasClass('div')){
+              if($(this).children('img').attr('src').length>50){
+                var item={
+                  base64:$(this).children('img').attr('src'),
+                  goods_id:$(this).children('select').val()
+                }
+                list[index]=item;
+                index++;
+              }
+            }
+          });
+          console.log(list);
+          if(list.length==0){
+            alert('请选择添加的广告图片');
+          }else {
+            $.ajax({
+              url:'__MODULE__/Ad/add_new',
+              method:'POST',
+              data:{
+                list:list
+              },
+              success:function(data){
+                if(data.code=='0'){
+                  alert(data.msg);
+                  location.reload();
+                }else {
+                  alert(data.msg);
+                }
+              }
+            });
+          }
+        });
+        $('.del_ad').on('click',function(){
+          var r=confirm("确定删除？");
+          if(r){
+            $.ajax({
+              url:'__MODULE__/Ad/delete_ad',
+              method:'POST',
+              data:{
+                ad_id:$(this).attr('data')
+              },
+              success:function(data){
+                console.log(data);
+                if(data.code==0){
+                  alert(data.msg);
+                  location.reload();
+                }else {
+                  alert(data.msg);
+                }
+              }
+            });
+          }
+        });
+      });
+
+    </script>
+</html>
