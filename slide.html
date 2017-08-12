@@ -1,0 +1,73 @@
+      var win_height=$(window).height();//客户端网页可视高度
+      var win_width=$(window).width();//客户端可视宽度
+      var doc_width=$(document).width();//网页内容宽度
+      var doc_height=$(document).height();//网页内容高度
+      var scrolltop=$(window).scrollTop();//网页在客户端滑动的高度
+			$(document).scroll(function(){
+				scrolltop=$(window).scrollTop();
+			});
+
+			var touch_start_x=0;
+			var touch_start_y=0;
+      //记录开始点击屏幕时的信息
+			$(document).bind('touchstart',function(event){
+				var touch_start=event.targetTouches[0];
+				touch_start_x=touch_start['clientX'];
+				touch_start_y=touch_start['clientY'];
+			});
+
+			var move_x=0;
+			var move_y=0;
+			var move_y_list=[];
+			var move_x_list=[];
+      //触摸滑动时逻辑处理
+			$(document).bind('touchmove',function(event){
+				var touchmove=event.targetTouches[0]
+				move_x=touch_start_x-touchmove['clientX'];
+				move_y=touch_start_y-touchmove['clientY'];
+				if(Math.abs(move_y)>=(Math.abs(move_x))*1.5){	//	1.5：大概斜线系数
+					move_y_list.push('1');
+				}else{
+					move_y_list.push('0');
+				}
+				if(Math.abs(move_x)>=(Math.abs(move_y))*1.5){	//	1.5：大概斜线系数
+					move_x_list.push('1');
+				}else{
+					move_x_list.push('0');
+				}
+			});
+
+			$(document).bind('touchend',function(event){
+				//下拉刷新货上拉加载更多
+				if(scrolltop<=0 || (scrolltop+win_height)>=doc_height){
+					if(move_y_list.indexOf('0')=='-1'){
+						//下拉刷新
+						if(scrolltop<=0 && move_y<0 && (Math.abs(move_y))>=(win_height/15)){	// 15:滑动距离要大于屏幕高度的1/15
+							reflush();
+						}
+						//上拉加载下一页
+						else if(scrolltop>0 && doc_height>win_height && move_y>0 && (scrolltop+win_height)>=doc_height && move_y>=(win_height/15)){		// 15:滑动距离要大于屏幕高度的1/15
+              add_next_page();
+						}
+					}
+				}
+
+				//左右切换
+				if(move_x_list.indexOf('0')=='-1'){
+					//向左滑动
+					if(move_x>0 && move_x>=(win_width/8)){
+            slide_left();
+					}
+					//向右滑动
+					else if (move_x<0 && (Math.abs(move_x))>(win_width/8)) {
+            slide_right();
+					}
+				}
+
+				touch_start_x=0;
+				touch_start_y=0;
+				move_x=0;
+				move_y=0;
+				move_y_list=[];
+				move_x_list=[];
+			});
